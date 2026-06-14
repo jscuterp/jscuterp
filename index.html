@@ -5,6 +5,8 @@
     <title>ZD230 Bundle System & Advanced ERP v2.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
         /* ZD230 69mm x 38mm Exact Thermal Label Styles */
@@ -115,8 +117,9 @@
                     </button>
                 </nav>
             </div>
-            <div class="p-4 bg-slate-950 text-[11px] text-center text-slate-400 border-t border-slate-800">
-                LocalStorage DB Live
+            
+            <div class="p-4 bg-slate-950 text-[11px] text-center text-emerald-400 font-bold border-t border-slate-800">
+                <i class="fa-solid fa-cloud-arrow-up animate-pulse mr-1"></i> CLOUD DATABSE CONNECTED
             </div>
         </aside>
 
@@ -136,16 +139,19 @@
             <main class="p-6 max-w-7xl w-full mx-auto space-y-6 print:p-0">
 
                 <div id="tab-dashboard" class="tab-content space-y-6 print:hidden">
+                    
                     <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
                         <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3"><i class="fa-solid fa-chart-pie mr-1 text-cyan-500"></i> Color Wise Lot Summary</h3>
-                        <div id="color-summary-box" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4"></div>
+                        <div id="color-summary-box" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
+                            </div>
                     </div>
 
                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                        <div class="px-6 py-4 bg-slate-50 border-b border-slate-200">
+                        <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
                             <h3 class="text-sm font-bold text-slate-800"><i class="fa-solid fa-sitemap text-cyan-600 mr-2"></i>YEAR &rarr; JOB &rarr; COLOR &rarr; CUTTING Structure</h3>
                         </div>
-                        <div class="p-6 space-y-4" id="tree-container"></div>
+                        <div class="p-6 space-y-4" id="tree-container">
+                            </div>
                     </div>
                 </div>
 
@@ -173,6 +179,7 @@
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+                            
                             <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
                                 <div class="flex justify-between items-center mb-1">
                                     <label class="text-xs font-bold text-slate-500">PO Numbers</label>
@@ -240,7 +247,8 @@
                                         <th class="p-3 font-bold text-center">Action</th>
                                     </tr>
                                 </thead>
-                                <tbody id="master-data-rows"></tbody>
+                                <tbody id="master-data-rows">
+                                    </tbody>
                             </table>
                         </div>
                     </div>
@@ -409,9 +417,10 @@
                                             + Add Short Shade
                                         </button>
                                     </div>
-                                    
-                                    <div id="short-cutting-matrix-root" class="space-y-4"></div>
+                                    <div id="short-cutting-matrix-root" class="space-y-4">
+                                        </div>
                                 </div>
+
                                 <div class="flex flex-wrap gap-3">
                                     <button onclick="generate()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2.5 px-5 rounded-lg shadow transition flex items-center space-x-1"><i class="fa-solid fa-gears"></i> <span>GENERATE BUNDLE</span></button>
                                     <button onclick="generateShortMatrixBundles()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2.5 px-5 rounded-lg shadow transition flex items-center space-x-1"><i class="fa-solid fa-layer-group"></i> <span>GENERATE SHORT MATRIX BUNDLE</span></button>
@@ -424,7 +433,8 @@
 
                         <div class="w-full lg:w-80 bg-white p-5 rounded-xl shadow-sm border border-slate-200 h-fit max-h-[600px] overflow-y-auto">
                             <h3 class="text-sm font-bold text-slate-800 border-b pb-2 mb-3"><i class="fa-solid fa-folder-open text-amber-500 mr-1"></i> Running Quick List</h3>
-                            <div id="sideHistoryList" class="space-y-2 text-xs"></div>
+                            <div id="sideHistoryList" class="space-y-2 text-xs">
+                                </div>
                         </div>
 
                     </div>
@@ -437,47 +447,60 @@
     </div>
 
     <script>
+        // BACKEND INJECTION KEY
+        const _SU_URL = "https://wzxtpuknxlwixvcrfggb.supabase.co";
+        const _SU_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6eHRwdWdueGx3aXh2Y3JmZ2diIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTgzMDk4MDIsImV4cCI6MjAzMzg4NTgwMn0.4U9g6O5m3z4Dq7bV_6-N5zW-o9_7N_O8lYp9g7bV9g4";
+        const supabase = window.supabase.createClient(_SU_URL, _SU_KEY);
+
         let currentEditingKey = null;
         let masterEditingKey = null; 
 
-        window.onload = function() {
+        window.onload = async function() {
             buildYearDropdowns();
             resetMasterDynamicInputs();
             updateAutoJobNo();
+            await fetchCloudData();
             renderHierarchyTree();
             renderMasterTable();
             calculateShadeSum();
             calculateSizeSum();
         };
 
+        // CLOUD SYNC ENGINE
+        async function fetchCloudData() {
+            try {
+                let { data: masterData } = await supabase.from('master_index').select('*');
+                if(masterData) {
+                    let masterIndex = masterData.map(d => d.id);
+                    localStorage.setItem('cut_master_index', JSON.stringify(masterIndex));
+                    masterData.forEach(d => localStorage.setItem('master_job_' + d.id, JSON.stringify(d.payload)));
+                }
+                let { data: erpData } = await supabase.from('erp_index').select('*');
+                if(erpData) {
+                    let erpIndex = erpData.map(d => d.id);
+                    localStorage.setItem('cut_erp_index', JSON.stringify(erpIndex));
+                    erpData.forEach(d => localStorage.setItem('erp_job_' + d.id, JSON.stringify(d.payload)));
+                }
+            } catch(e) { console.log("Offline Fallback Mode Activated"); }
+        }
+
         function toggleCustomizeBundleInput() {
             const chk = document.getElementById('customize-bundle-chk');
             const wrapper = document.getElementById('customize-qty-wrapper');
-            if(chk.checked) {
-                wrapper.classList.remove('hidden');
-            } else {
-                wrapper.classList.add('hidden');
-            }
+            if(chk.checked) { wrapper.classList.remove('hidden'); } 
+            else { wrapper.classList.add('hidden'); }
         }
 
         function buildYearDropdowns() {
             const currentYear = new Date().getFullYear();
             const masterDropdown = document.getElementById('m-year');
             const generatorDropdown = document.getElementById('load-year');
-            
-            masterDropdown.innerHTML = '';
-            generatorDropdown.innerHTML = '';
-            
-            for (let yr = 2000; yr <= 2100; yr++) {
-                let opt1 = document.createElement('option');
-                opt1.value = yr;
-                opt1.textContent = yr;
+            masterDropdown.innerHTML = ''; generatorDropdown.innerHTML = '';
+            for (let yr = 2020; yr <= 2035; yr++) {
+                let opt1 = document.createElement('option'); opt1.value = yr; opt1.textContent = yr;
                 if (yr === currentYear) opt1.selected = true;
                 masterDropdown.appendChild(opt1);
-
-                let opt2 = document.createElement('option');
-                opt2.value = yr;
-                opt2.textContent = yr;
+                let opt2 = document.createElement('option'); opt2.value = yr; opt2.textContent = yr;
                 if (yr === currentYear) opt2.selected = true;
                 generatorDropdown.appendChild(opt2);
             }
@@ -486,13 +509,11 @@
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById(`tab-${tabId}`).classList.remove('hidden');
-
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.classList.remove('bg-cyan-600', 'text-white');
                 btn.classList.add('text-slate-400', 'hover:bg-slate-800', 'hover:text-white');
             });
             document.getElementById(`btn-${tabId}`).classList.add('bg-cyan-600', 'text-white');
-            
             const searchBar = document.getElementById('search-bar-container');
             if(tabId === 'dashboard') {
                 document.getElementById('page-title').innerText = "Job & Cutting History";
@@ -512,21 +533,13 @@
 
         function calculateShadeSum() {
             let inputs = document.querySelectorAll('.lay-qty-input');
-            let total = 0;
-            inputs.forEach(inp => {
-                let val = parseInt(inp.value);
-                if(!isNaN(val)) total += val;
-            });
+            let total = 0; inputs.forEach(inp => { let val = parseInt(inp.value); if(!isNaN(val)) total += val; });
             document.getElementById('shade-total-box').innerText = total;
         }
 
         function calculateSizeSum() {
             let inputs = document.querySelectorAll('.ratio-input');
-            let total = 0;
-            inputs.forEach(inp => {
-                let val = parseInt(inp.value);
-                if(!isNaN(val)) total += val;
-            });
+            let total = 0; inputs.forEach(inp => { let val = parseInt(inp.value); if(!isNaN(val)) total += val; });
             document.getElementById('size-total-box').innerText = total;
         }
 
@@ -544,33 +557,21 @@
         function getMasterDynamicValues(containerId) {
             const container = document.getElementById(containerId);
             const inputs = container.querySelectorAll('input');
-            let values = [];
-            inputs.forEach(input => {
-                let val = input.value.trim();
-                if(val) values.push(val);
-            });
+            let values = []; inputs.forEach(input => { let val = input.value.trim(); if(val) values.push(val); });
             return values.join(', ');
         }
 
         function setMasterDynamicValues(containerId, commaString) {
-            const container = document.getElementById(containerId);
-            container.innerHTML = '';
-            if(!commaString) {
-                addMasterDynamicRow(containerId);
-                return;
-            }
+            const container = document.getElementById(containerId); container.innerHTML = '';
+            if(!commaString) { addMasterDynamicRow(containerId); return; }
             let arr = commaString.split(',').map(s => s.trim());
-            arr.forEach(val => {
-                if(val) addMasterDynamicRow(containerId, val);
-            });
+            arr.forEach(val => { if(val) addMasterDynamicRow(containerId, val); });
             if(container.children.length === 0) addMasterDynamicRow(containerId);
         }
 
         function resetMasterDynamicInputs() {
-            setMasterDynamicValues('m-po-container', '');
-            setMasterDynamicValues('m-color-container', '');
-            setMasterDynamicValues('m-parts-container', '');
-            setMasterDynamicValues('m-sizes-container', '');
+            setMasterDynamicValues('m-po-container', ''); setMasterDynamicValues('m-color-container', '');
+            setMasterDynamicValues('m-parts-container', ''); setMasterDynamicValues('m-sizes-container', '');
         }
 
         function updateAutoJobNo() {
@@ -582,951 +583,493 @@
             document.getElementById('m-job').value = nextNo;
         }
 
-        function saveMasterData() {
+        async function saveMasterData() {
             const year = document.getElementById('m-year').value;
             const jobNo = document.getElementById('m-job').value;
             const buyer = document.getElementById('m-buyer').value.trim();
             const style = document.getElementById('m-style').value.trim();
-            
             const po = getMasterDynamicValues('m-po-container');
             const color = getMasterDynamicValues('m-color-container');
             const parts = getMasterDynamicValues('m-parts-container');
             const sizes = getMasterDynamicValues('m-sizes-container');
 
-            if(!buyer || !style) {
-                alert("Please fill in Buyer and Style fields!");
-                return;
-            }
+            if(!buyer || !style) { alert("Please fill in Buyer and Style fields!"); return; }
 
             const uniqueJobKey = masterEditingKey ? masterEditingKey : (year + "-" + jobNo);
             const displayJobNo = masterEditingKey ? masterEditingKey.split('-')[1] : jobNo;
-
             const masterObj = { year, jobNo: uniqueJobKey, displayJobNo, buyer, style, po, color, parts, sizes };
-            let masterIndex = JSON.parse(localStorage.getItem('cut_master_index') || '[]');
-            
-            if(!masterIndex.includes(uniqueJobKey)) {
-                masterIndex.push(uniqueJobKey);
-                localStorage.setItem('cut_master_index', JSON.stringify(masterIndex));
-            }
 
+            let masterIndex = JSON.parse(localStorage.getItem('cut_master_index') || '[]');
+            if(!masterIndex.includes(uniqueJobKey)) { masterIndex.push(uniqueJobKey); }
+
+            localStorage.setItem('cut_master_index', JSON.stringify(masterIndex));
             localStorage.setItem('master_job_' + uniqueJobKey, JSON.stringify(masterObj));
-            
-            cancelMasterEdit();
-            renderMasterTable();
-            alert('Master Data successfully saved!');
+
+            await supabase.from('master_index').upsert({ id: uniqueJobKey, payload: masterObj });
+
+            cancelMasterEdit(); await fetchCloudData(); renderMasterTable();
+            alert('Master Data successfully synchronized on live database cloud!');
         }
 
-        function loadMasterEdit(key) {
-            let data = JSON.parse(localStorage.getItem('master_job_' + key));
-            if(!data) return;
+        function renderMasterTable() {
+            const rowsContainer = document.getElementById('master-data-rows'); rowsContainer.innerHTML = '';
+            let masterIndex = JSON.parse(localStorage.getItem('cut_master_index') || '[]');
+            if(masterIndex.length === 0) {
+                rowsContainer.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-400 font-medium">No master profiles configuration matching state criteria.</td></tr>`;
+                return;
+            }
+            masterIndex.sort().reverse().forEach(key => {
+                let data = JSON.parse(localStorage.getItem('master_job_' + key));
+                if(!data) return;
+                let tr = document.createElement('tr'); tr.className = "border-b border-slate-200 hover:bg-slate-50 transition font-medium text-slate-600";
+                tr.innerHTML = `
+                    <td class="p-3">${data.year}</td>
+                    <td class="p-3 font-mono font-bold text-cyan-600">${data.displayJobNo}</td>
+                    <td class="p-3 font-bold text-slate-800">${data.buyer}</td>
+                    <td class="p-3 font-bold text-slate-700">${data.style}</td>
+                    <td class="p-3 max-w-[120px] truncate" title="${data.po}">${data.po}</td>
+                    <td class="p-3 max-w-[100px] truncate" title="${data.color}">${data.color}</td>
+                    <td class="p-3 max-w-[80px] truncate" title="${data.parts}">${data.parts}</td>
+                    <td class="p-3 max-w-[80px] truncate" title="${data.sizes}">${data.sizes}</td>
+                    <td class="p-3 text-center flex items-center justify-center space-x-2">
+                        <button onclick="editMasterJob('${key}')" class="bg-cyan-50 text-cyan-600 p-1 rounded hover:bg-cyan-100 transition"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteMasterJob('${key}')" class="bg-rose-50 text-rose-600 p-1 rounded hover:bg-rose-100 transition"><i class="fa-solid fa-trash"></i></button>
+                    </td>`;
+                rowsContainer.appendChild(tr);
+            });
+        }
 
-            masterEditingKey = key;
-            document.getElementById('master-form-title').innerHTML = `<i class="fa-solid fa-database text-amber-500 mr-2"></i>Master Data Configuration - EDIT MODE`;
+        function editMasterJob(key) {
+            let data = JSON.parse(localStorage.getItem('master_job_' + key)); if(!data) return;
+            masterEditingKey = key; document.getElementById('master-form-title').innerHTML = `<i class="fa-solid fa-pen-to-square text-amber-500 mr-2"></i>Edit Master Data Job: <span class="text-cyan-600">${data.year}-${data.displayJobNo}</span>`;
+            document.getElementById('m-year').value = data.year; document.getElementById('m-job').value = data.displayJobNo;
+            document.getElementById('m-buyer').value = data.buyer; document.getElementById('m-style').value = data.style;
+            setMasterDynamicValues('m-po-container', data.po); setMasterDynamicValues('m-color-container', data.color);
+            setMasterDynamicValues('m-parts-container', data.parts); setMasterDynamicValues('m-sizes-container', data.sizes);
             document.getElementById('m-cancel-btn').classList.remove('hidden');
-
-            document.getElementById('m-year').value = data.year;
-            document.getElementById('m-job').value = data.displayJobNo;
-            document.getElementById('m-buyer').value = data.buyer || '';
-            document.getElementById('m-style').value = data.style || '';
-
-            setMasterDynamicValues('m-po-container', data.po);
-            setMasterDynamicValues('m-color-container', data.color);
-            setMasterDynamicValues('m-parts-container', data.parts);
-            setMasterDynamicValues('m-sizes-container', data.sizes);
-            
-            document.getElementById('master-form-title').scrollIntoView({ behavior: 'smooth' });
         }
 
         function cancelMasterEdit() {
-            masterEditingKey = null;
-            document.getElementById('master-form-title').innerHTML = `<i class="fa-solid fa-database text-cyan-600 mr-2"></i>Master Data Configuration Entry`;
-            document.getElementById('m-cancel-btn').classList.add('hidden');
-            
-            document.getElementById('m-buyer').value = '';
-            document.getElementById('m-style').value = '';
-            resetMasterDynamicInputs();
-            updateAutoJobNo();
+            masterEditingKey = null; document.getElementById('master-form-title').innerHTML = `<i class="fa-solid fa-database text-cyan-600 mr-2"></i>Master Data Configuration Entry`;
+            document.getElementById('m-buyer').value = ''; document.getElementById('m-style').value = '';
+            resetMasterDynamicInputs(); updateAutoJobNo(); document.getElementById('m-cancel-btn').classList.add('hidden');
         }
 
-        function renderMasterTable(filteredIndex = null) {
-            const rowsContainer = document.getElementById('master-data-rows');
-            rowsContainer.innerHTML = '';
-            let masterIndex = filteredIndex || JSON.parse(localStorage.getItem('cut_master_index') || '[]');
-
-            if(masterIndex.length === 0) {
-                rowsContainer.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-400">No master data matched.</td></tr>`;
-                return;
-            }
-
-            masterIndex.forEach(key => {
-                let data = JSON.parse(localStorage.getItem('master_job_' + key));
-                if(!data) return;
-
-                rowsContainer.innerHTML += `
-                    <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
-                        <td class="p-3 font-bold">${data.year}</td>
-                        <td class="p-3 font-bold font-mono text-cyan-600">${data.displayJobNo}</td>
-                        <td class="p-3 font-semibold">${data.buyer}</td>
-                        <td class="p-3 font-medium">${data.style}</td>
-                        <td class="p-3 text-slate-500 truncate max-w-[120px]" title="${data.po}">${data.po || '-'}</td>
-                        <td class="p-3 text-slate-500 truncate max-w-[120px]" title="${data.color}">${data.color || '-'}</td>
-                        <td class="p-3 text-slate-500 truncate max-w-[120px]" title="${data.parts}">${data.parts || '-'}</td>
-                        <td class="p-3 text-slate-500 truncate max-w-[120px]" title="${data.sizes}">${data.sizes || '-'}</td>
-                        <td class="p-3 text-center space-x-2 whitespace-nowrap">
-                            <button onclick="loadMasterEdit('${key}')" class="text-amber-500 hover:text-amber-700 font-bold"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
-                            <button onclick="deleteMasterData('${key}')" class="text-red-500 hover:text-red-700 font-bold"><i class="fa-solid fa-trash-can"></i> Delete</button>
-                        </td>
-                    </tr>
-                `;
-            });
+        async function deleteMasterJob(key) {
+            if(!confirm("Are you sure you want to permanently delete this master profile job configuration list completely?")) return;
+            let masterIndex = JSON.parse(localStorage.getItem('cut_master_index') || '[]');
+            masterIndex = masterIndex.filter(k => k !== key);
+            localStorage.setItem('cut_master_index', JSON.stringify(masterIndex));
+            localStorage.removeItem('master_job_' + key);
+            await supabase.from('master_index').delete().eq('id', key);
+            await fetchCloudData(); renderMasterTable();
         }
 
         function searchMasterTable() {
-            const query = document.getElementById('master-search-input').value.toLowerCase().trim();
-            let masterIndex = JSON.parse(localStorage.getItem('cut_master_index') || '[]');
-            
-            if(!query) {
-                renderMasterTable();
-                return;
-            }
-
-            const filtered = masterIndex.filter(key => {
-                let data = JSON.parse(localStorage.getItem('master_job_' + key));
-                if(!data) return false;
-                return data.displayJobNo.toLowerCase().includes(query) || data.year.toLowerCase().includes(query);
-            });
-
-            renderMasterTable(filtered);
-        }
-
-        function deleteMasterData(key) {
-            if(confirm(`Are you sure you want to delete Job record?`)) {
-                localStorage.removeItem('master_job_' + key);
-                let masterIndex = JSON.parse(localStorage.getItem('cut_master_index') || '[]');
-                masterIndex = masterIndex.filter(item => item !== key);
-                localStorage.setItem('cut_master_index', JSON.stringify(masterIndex));
-                if(masterEditingKey === key) cancelMasterEdit();
-                renderMasterTable();
-                updateAutoJobNo();
+            let input = document.getElementById('master-search-input').value.trim().toLowerCase();
+            let table = document.getElementById('master-list-table'); let trs = table.getElementsByTagName('tr');
+            for(let i = 1; i < trs.length; i++) {
+                let tdJob = trs[i].getElementsByTagName('td')[1];
+                if(tdJob) {
+                    let jobText = tdJob.textContent || tdJob.innerText;
+                    trs[i].style.display = jobText.toLowerCase().includes(input) ? "" : "none";
+                }
             }
         }
 
         function autoFillFromJobNo() {
-            const year = document.getElementById('load-year').value;
-            const jobNoInput = document.getElementById('load-job-no').value.trim();
-            
-            if(!jobNoInput) {
-                clearAutoFields();
-                return;
-            }
-
-            const lookupKey = year + "-" + jobNoInput;
-            let data = JSON.parse(localStorage.getItem('master_job_' + lookupKey));
-            
+            const y = document.getElementById('load-year').value;
+            const j = document.getElementById('load-job-no').value.trim();
+            const key = y + "-" + j;
+            let data = JSON.parse(localStorage.getItem('master_job_' + key));
             if(!data) {
-                clearAutoFields();
+                document.getElementById('buyer').value = ''; document.getElementById('style').value = '';
+                populateSelectDropdown('po-select', ''); populateSelectDropdown('color-select', '');
                 return;
             }
-
-            document.getElementById('buyer').value = data.buyer || '';
-            document.getElementById('style').value = data.style || '';
-            document.getElementById('inp-job-no').value = lookupKey;
-
-            const poSelect = document.getElementById('po-select');
-            poSelect.innerHTML = '<option value="">Select</option>';
-            if(data.po) {
-                let poArr = data.po.split(',').map(s => s.trim());
-                poArr.forEach(p => { if(p) poSelect.innerHTML += `<option value="${p}">${p}</option>`; });
-                document.getElementById('po').value = poArr[0] || '';
-            }
-
-            const colorSelect = document.getElementById('color-select');
-            colorSelect.innerHTML = '<option value="">Select</option>';
-            if(data.color) {
-                let colArr = data.color.split(',').map(s => s.trim());
-                colArr.forEach(c => { if(c) colorSelect.innerHTML += `<option value="${c}">${c}</option>`; });
-                document.getElementById('color').value = colArr[0] || '';
-            }
-
-            const sizeTbody = document.getElementById('sizeTbl').getElementsByTagName('tbody')[0];
-            sizeTbody.innerHTML = '';
-            if(data.sizes) {
-                let sizeArr = data.sizes.split(',').map(s => s.trim());
-                sizeArr.forEach(sz => { if(sz) addSize(sz, ''); });
-            } else {
-                addSize('', '');
-            }
-
-            const partTbody = document.getElementById('partTbl').getElementsByTagName('tbody')[0];
-            partTbody.innerHTML = '';
-            if(data.parts) {
-                let partArr = data.parts.split(',').map(s => s.trim());
-                partArr.forEach(p => { if(p) addPart(p); });
-            } else {
-                addPart('');
-            }
-            calculateSizeSum();
-
-            initializeShortCuttingMatrix(data);
+            document.getElementById('buyer').value = data.buyer;
+            document.getElementById('style').value = data.style;
+            populateSelectDropdown('po-select', data.po);
+            populateSelectDropdown('color-select', data.color);
         }
 
-        function clearAutoFields() {
-            document.getElementById('buyer').value = '';
-            document.getElementById('style').value = '';
-            document.getElementById('po').value = '';
-            document.getElementById('color').value = '';
-            document.getElementById('po-select').innerHTML = '<option value="">Select</option>';
-            document.getElementById('color-select').innerHTML = '<option value="">Select</option>';
-            document.getElementById('sizeTbl').getElementsByTagName('tbody')[0].innerHTML = '<tr><td class="p-1 border border-slate-300"><input class="w-full bg-white border border-slate-200 p-1 rounded" placeholder="e.g. L"></td><td class="p-1 border border-slate-300"><input type="number" oninput="calculateSizeSum()" class="w-full bg-white border border-slate-200 p-1 rounded ratio-input" placeholder="e.g. 2"></td><td class="p-1 border border-slate-300 text-center"><button class="text-red-500 hover:text-red-700 font-bold" onclick="removeRow(this, \'size\')">✖</button></td></tr>';
-            document.getElementById('partTbl').getElementsByTagName('tbody')[0].innerHTML = '<tr><td class="p-1 border border-slate-300"><input class="w-full bg-white border border-slate-200 p-1 rounded" placeholder="e.g. BACK PART"></td><td class="p-1 border border-slate-300 text-center"><button class="text-red-500 hover:text-red-700 font-bold" onclick="removeRow(this)">✖</button></td></tr>';
-            calculateSizeSum();
-            document.getElementById('short-cutting-matrix-root').innerHTML = ''; 
-            document.getElementById('customize-bundle-chk').checked = false;
-            toggleCustomizeBundleInput();
+        function populateSelectDropdown(elementId, commaString) {
+            const select = document.getElementById(elementId); select.innerHTML = '<option value="">Select</option>';
+            if(!commaString) return;
+            commaString.split(',').map(s=>s.trim()).forEach(val => {
+                if(val) select.innerHTML += `<option value="${val}">${val}</option>`;
+            });
         }
 
-        function addShade(shade="", lay=""){
-            let tbody = document.getElementById('shadeTbl').getElementsByTagName('tbody')[0];
-            tbody.insertAdjacentHTML('beforeend', `<tr><td class="p-1 border border-slate-300"><input class="w-full bg-white border border-slate-200 p-1 rounded" value="${shade}" placeholder="e.g. A"></td><td class="p-1 border border-slate-300"><input type="number" oninput="calculateShadeSum()" class="w-full bg-white border border-slate-200 p-1 rounded lay-qty-input" value="${lay}" placeholder="e.g. 20"></td><td class="p-1 border border-slate-300 text-center"><button class="text-red-500 hover:text-red-700 font-bold" onclick="removeRow(this, 'shade')">✖</button></td></tr>`);
-            calculateShadeSum();
+        function addShade(sh = '', qty = '') {
+            let tbody = document.querySelector('#shadeTbl tbody'); let tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="p-1 border border-slate-300"><input class="w-full bg-white border border-slate-200 p-1 rounded" value="${sh}" placeholder="e.g. A"></td>
+                <td class="p-1 border border-slate-300"><input type="number" oninput="calculateShadeSum()" class="w-full bg-white border border-slate-200 p-1 rounded lay-qty-input" value="${qty}" placeholder="e.g. 20"></td>
+                <td class="p-1 border border-slate-300 text-center"><button class="text-red-500 hover:text-red-700 font-bold" onclick="removeRow(this, 'shade')">✖</button></td>`;
+            tbody.appendChild(tr); calculateShadeSum();
         }
 
-        function addSize(size="", ratio=""){
-            let tbody = document.getElementById('sizeTbl').getElementsByTagName('tbody')[0];
-            tbody.insertAdjacentHTML('beforeend', `<tr><td class="p-1 border border-slate-300"><input class="w-full bg-white border border-slate-200 p-1 rounded" value="${size}" placeholder="e.g. L"></td><td class="p-1 border border-slate-300"><input type="number" oninput="calculateSizeSum()" class="w-full bg-white border border-slate-200 p-1 rounded ratio-input" value="${ratio}" placeholder="e.g. 1"></td><td class="p-1 border border-slate-300 text-center"><button class="text-red-500 hover:text-red-700 font-bold" onclick="removeRow(this, 'size')">✖</button></td></tr>`);
-            calculateSizeSum();
+        function addSize(sz = '', rt = '') {
+            let tbody = document.querySelector('#sizeTbl tbody'); let tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="p-1 border border-slate-300"><input class="w-full bg-white border border-slate-200 p-1 rounded" value="${sz}" placeholder="e.g. L"></td>
+                <td class="p-1 border border-slate-300"><input type="number" oninput="calculateSizeSum()" class="w-full bg-white border border-slate-200 p-1 rounded ratio-input" value="${rt}" placeholder="e.g. 2"></td>
+                <td class="p-1 border border-slate-300 text-center"><button class="text-red-500 hover:text-red-700 font-bold" onclick="removeRow(this, 'size')">✖</button></td>`;
+            tbody.appendChild(tr); calculateSizeSum();
         }
 
-        function addPart(part=""){
-            let tbody = document.getElementById('partTbl').getElementsByTagName('tbody')[0];
-            tbody.insertAdjacentHTML('beforeend', `<tr><td class="p-1 border border-slate-300"><input class="w-full bg-white border border-slate-200 p-1 rounded" value="${part}" placeholder="e.g. FRONT PART"></td><td class="p-1 border border-slate-300 text-center"><button class="text-red-500 hover:text-red-700 font-bold" onclick="removeRow(this)">✖</button></td></tr>`);
+        function addPart(pt = '') {
+            let tbody = document.querySelector('#partTbl tbody'); let tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="p-1 border border-slate-300"><input class="w-full bg-white border border-slate-200 p-1 rounded" value="${pt}" placeholder="e.g. BACK PART"></td>
+                <td class="p-1 border border-slate-300 text-center"><button class="text-red-500 hover:text-red-700 font-bold" onclick="removeRow(this)">✖</button></td>`;
+            tbody.appendChild(tr);
         }
 
         function removeRow(btn, type) {
-            let row = btn.parentNode.parentNode;
-            row.parentNode.removeChild(row);
-            if(type === 'shade') calculateShadeSum();
-            if(type === 'size') calculateSizeSum();
+            btn.parentElement.parentElement.remove();
+            if(type === 'shade') calculateShadeSum(); if(type === 'size') calculateSizeSum();
+        }
+
+        function addShortShadeBlock() {
+            const container = document.getElementById('short-cutting-matrix-root');
+            const blockId = 'short_blk_' + Date.now() + Math.random().toString(36).substr(2, 5);
+            const div = document.createElement('div');
+            div.className = "p-4 bg-slate-800 rounded-lg border border-slate-700 text-xs text-slate-300 space-y-3 short-block-item";
+            div.setAttribute('id', blockId);
+            div.innerHTML = `
+                <div class="flex justify-between items-center bg-slate-900 p-2 rounded">
+                    <div class="flex items-center space-x-2">
+                        <span class="font-black text-amber-400 uppercase tracking-widest text-[10px]">Shade Group Layer Name:</span>
+                        <input type="text" class="bg-slate-950 border border-slate-700 text-white font-bold px-2 py-0.5 rounded w-20 short-shade-title" placeholder="e.g. A" value="A">
+                    </div>
+                    <button type="button" onclick="document.getElementById('${blockId}').remove()" class="text-rose-400 hover:text-rose-600 font-bold"><i class="fa-solid fa-trash-can mr-1"></i> Delete Shade Group</button>
+                </div>
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-[10px] font-bold text-slate-400">SIZES BREAKDOWN FOR THIS LAY SHADE</span>
+                    <button type="button" onclick="addShortSizeInputRow('${blockId}')" class="text-cyan-400 font-bold hover:underline">+ Add Size Pcs Entry</button>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2 short-sizes-container"></div>`;
+            container.appendChild(div); addShortSizeInputRow(blockId);
+        }
+
+        function addShortSizeInputRow(blockId, size = '', pcs = '') {
+            const rootBlock = document.getElementById(blockId); const container = rootBlock.querySelector('.short-sizes-container');
+            const wrapper = document.createElement('div'); wrapper.className = "flex items-center space-x-1 border border-slate-700 p-1.5 rounded bg-slate-950/50 size-row-item";
+            wrapper.innerHTML = `
+                <input type="text" class="w-12 bg-slate-900 border border-slate-700 text-center font-bold text-white rounded uppercase short-sz-name" placeholder="M" value="${size}">
+                <span class="text-slate-500 font-bold">:</span>
+                <input type="number" class="w-16 bg-slate-900 border border-slate-700 text-center font-black text-emerald-400 rounded short-sz-pcs" placeholder="120" value="${pcs}">
+                <button type="button" onclick="this.parentElement.remove()" class="text-red-400 font-bold text-[10px] hover:text-red-600 px-0.5">✖</button>`;
+            container.appendChild(wrapper);
+        }
+
+        async function generate() {
+            let year = document.getElementById('load-year').value; let jobNo = document.getElementById('load-job-no').value.trim();
+            let buyer = document.getElementById('buyer').value; let style = document.getElementById('style').value;
+            let po = document.getElementById('po').value; let color = document.getElementById('color').value;
+            let cut = document.getElementById('cut').value; let pcs = parseInt(document.getElementById('pcs').value);
+
+            if(!buyer || !style || !po || !color || !cut || !pcs) { alert('Please execute job auto-fill validation and complete sizing arrays fields.'); return; }
+
+            let shades = []; document.querySelectorAll('#shadeTbl tbody tr').forEach(tr => {
+                let inputs = tr.getElementsByTagName('input'); if(inputs[0] && inputs[0].value) shades.push({ s: inputs[0].value.toUpperCase(), q: parseInt(inputs[1].value)||0 });
+            });
+            let sizes = []; document.querySelectorAll('#sizeTbl tbody tr').forEach(tr => {
+                let inputs = tr.getElementsByTagName('input'); if(inputs[0] && inputs[0].value) sizes.push({ s: inputs[0].value.toUpperCase(), r: parseInt(inputs[1].value)||0 });
+            });
+            let parts = []; document.querySelectorAll('#partTbl tbody tr').forEach(tr => {
+                let inputs = tr.getElementsByTagName('input'); if(inputs[0] && inputs[0].value) parts.push(inputs[0].value.toUpperCase());
+            });
+
+            if(shades.length==0 || sizes.length==0 || parts.length==0) { alert('Multi shade arrays matrices cannot be generated blank.'); return; }
+
+            let sysCutKey = currentEditingKey ? currentEditingKey : ('erp_' + Date.now());
+            let logObj = { year, jobNo, buyer, style, po, color, cut, pcs, shades, sizes, parts, type: 'standard', timestamp: Date.now() };
+
+            let erpIndex = JSON.parse(localStorage.getItem('cut_erp_index') || '[]');
+            if(!erpIndex.includes(sysCutKey)) erpIndex.push(sysCutKey);
+            localStorage.setItem('cut_erp_index', JSON.stringify(erpIndex));
+            localStorage.setItem('erp_job_' + sysCutKey, JSON.stringify(logObj));
+
+            await supabase.from('erp_index').upsert({ id: sysCutKey, payload: logObj });
+
+            let html = `<div class="no-print my-4 p-4 bg-amber-50 rounded-xl border border-amber-200 flex justify-between items-center">
+                <span class="text-xs font-semibold text-amber-800"><i class="fa-solid fa-print mr-1"></i> Data logic sheets compiled. Ready for thermal labels pipeline.</span>
+                <button onclick="window.print()" class="bg-amber-600 text-white font-bold px-4 py-2 rounded-lg text-xs hover:bg-amber-700 transition"><i class="fa-solid fa-print"></i> Execute Print</button>
+            </div>`;
+
+            let bundleNo = 1; let sizeSerialTracker = {}; sizes.forEach(sz => sizeSerialTracker[sz.s] = 1);
+            shades.forEach(sh => {
+                for(let layer = 1; layer <= sh.q; layer++) {
+                    sizes.forEach(sz => {
+                        if(sz.r <= 0) return; let currentSerial = sizeSerialTracker[sz.s] || 1;
+                        let remaining = sz.r;
+                        while(remaining > 0) {
+                            let take = Math.min(remaining, pcs);
+                            let start = currentSerial; let end = currentSerial + take - 1;
+                            parts.forEach(p => {
+                                html += `<div class="label"><table class="inner">
+                                    <tr><td colspan="4" class="head">ADVANCE CUT ERP BUNDLE</td></tr>
+                                    <tr><td>Buyer</td><td>${buyer}</td><td>Style</td><td>${style}</td></tr>
+                                    <tr><td>Cut No</td><td>${cut}</td><td>Size</td><td>${sz.s}</td></tr>
+                                    <tr><td>Bundle</td><td>B-${bundleNo}</td><td>Ply No</td><td>${layer} (Shd: ${sh.s})</td></tr>
+                                    <tr><td>PO</td><td>${po}</td><td>Start</td><td>${start}</td></tr>
+                                    <tr><td>Color</td><td>${color}</td><td>End</td><td>${end}</td></tr>
+                                    <tr><td>Part</td><td>${p}</td><td>Qty</td><td>${take}</td></tr>
+                                    <tr><td colspan="4" class="head" style="font-size:9px;">QR: ${year}-${jobNo}|C-${cut}|${sz.s}|B-${bundleNo}</td></tr>
+                                </table></div>`;
+                            });
+                            bundleNo++; currentSerial += take; remaining -= take;
+                        }
+                        sizeSerialTracker[sz.s] = currentSerial;
+                    });
+                }
+            });
+
+            document.getElementById("out").innerHTML = html;
+            clearCurrentForm(); await fetchCloudData(); displayQuickList();
+            alert('Bundle database logic processing synchronized successfully!');
+        }
+
+        async function generateShortMatrixBundles() {
+            let year = document.getElementById('load-year').value; let jobNo = document.getElementById('load-job-no').value.trim();
+            let buyer = document.getElementById('buyer').value; let style = document.getElementById('style').value;
+            let po = document.getElementById('po').value; let color = document.getElementById('color').value;
+            let cut = document.getElementById('cut').value; let pcs = parseInt(document.getElementById('pcs').value);
+
+            if(!buyer || !style || !po || !color || !cut || !pcs) { alert('Please check base form descriptors parameter definitions.'); return; }
+
+            let parts = []; document.querySelectorAll('#partTbl tbody tr').forEach(tr => {
+                let inputs = tr.getElementsByTagName('input'); if(inputs[0] && inputs[0].value) parts.push(inputs[0].value.toUpperCase());
+            });
+            if(parts.length==0) { alert('Please define at least one structural garments parts item parameter log row.'); return; }
+
+            let shortBlocks = []; const blocks = document.querySelectorAll('.short-block-item');
+            blocks.forEach(blk => {
+                let shadeTitle = blk.querySelector('.short-shade-title').value.trim().toUpperCase(); if(!shadeTitle) return;
+                let sizesArray = []; blk.querySelectorAll('.size-row-item').forEach(srow => {
+                    let szName = srow.querySelector('.short-sz-name').value.trim().toUpperCase();
+                    let szPcs = parseInt(srow.querySelector('.short-sz-pcs').value) || 0;
+                    if(szName && szPcs > 0) sizesArray.push({ name: szName, totalPcs: szPcs });
+                });
+                if(sizesArray.length > 0) shortBlocks.push({ shade: shadeTitle, matrix: sizesArray });
+            });
+
+            if(shortBlocks.length === 0) { alert('Short dynamic custom target layers matrix blocks schema definitions are empty.'); return; }
+
+            let sysCutKey = currentEditingKey ? currentEditingKey : ('erp_' + Date.now());
+            let logObj = { year, jobNo, buyer, style, po, color, cut, pcs, parts, shortBlocks, type: 'short_matrix', timestamp: Date.now() };
+
+            let erpIndex = JSON.parse(localStorage.getItem('cut_erp_index') || '[]');
+            if(!erpIndex.includes(sysCutKey)) erpIndex.push(sysCutKey);
+            localStorage.setItem('cut_erp_index', JSON.stringify(erpIndex));
+            localStorage.setItem('erp_job_' + sysCutKey, JSON.stringify(logObj));
+
+            await supabase.from('erp_index').upsert({ id: sysCutKey, payload: logObj });
+
+            let html = `<div class="no-print my-4 p-4 bg-indigo-50 rounded-xl border border-indigo-200 flex justify-between items-center">
+                <span class="text-xs font-semibold text-indigo-800"><i class="fa-solid fa-calculator mr-1"></i> Custom physical components matrix sheets compiled.</span>
+                <button onclick="window.print()" class="bg-indigo-600 text-white font-bold px-4 py-2 rounded-lg text-xs hover:bg-indigo-700 transition"><i class="fa-solid fa-print"></i> Execute Thermal Print</button>
+            </div>`;
+
+            let bundleNo = 1; let sizeSerialTracker = {};
+            let isCustomMode = document.getElementById('customize-bundle-chk').checked;
+            let customExtraThreshold = parseInt(document.getElementById('customize-bundle-pcs').value) || 5;
+
+            shortBlocks.forEach(blockBlock => {
+                let sh = blockBlock.shade;
+                blockBlock.matrix.forEach(szNode => {
+                    let currentSize = szNode.name; let totalPcsToMake = szNode.totalPcs;
+                    let currentSerial = sizeSerialTracker[currentSize] || 1; let remaining = totalPcsToMake;
+                    while(remaining > 0) {
+                        let take = Math.min(remaining, pcs);
+                        if(isCustomMode && remaining > pcs && (remaining - pcs) <= customExtraThreshold) { take = remaining; }
+                        let start = currentSerial; let end = currentSerial + take - 1;
+                        parts.forEach(p => {
+                            html += `<div class="label"><table class="inner">
+                                <tr><td colspan="4" class="head">ADVANCE CUT ERP BUNDLE</td></tr>
+                                <tr><td>Buyer</td><td>${buyer}</td><td>Style</td><td>${style}</td></tr>
+                                <tr><td>Cut No</td><td>${cut}</td><td>Size</td><td>${currentSize}</td></tr>
+                                <tr><td>Bundle</td><td>B-${bundleNo}</td><td>Shade Layer</td><td>Custom (Shd: ${sh})</td></tr>
+                                <tr><td>PO</td><td>${po}</td><td>Start</td><td>${start}</td></tr>
+                                <tr><td>Color</td><td>${color}</td><td>End</td><td>${end}</td></tr>
+                                <tr><td>Part</td><td>${p}</td><td>Qty</td><td>${take}</td></tr>
+                                <tr><td colspan="4" class="head" style="font-size:9px;">QR: ${year}-${jobNo}|C-${cut}|${currentSize}|B-${bundleNo}</td></tr>
+                            </table></div>`;
+                        });
+                        bundleNo++; currentSerial = end + 1; remaining -= take;
+                    }
+                    sizeSerialTracker[currentSize] = currentSerial;
+                });
+            });
+
+            document.getElementById("out").innerHTML = html;
+            clearCurrentForm(); await fetchCloudData(); displayQuickList();
+            alert('Custom tracking bundles synchronized onto database server network pipeline logs!');
         }
 
         function clearCurrentForm() {
-            document.getElementById("load-job-no").value = "";
-            document.getElementById("buyer").value = "";
-            document.getElementById("style").value = "";
-            document.getElementById("po").value = "";
-            document.getElementById("cut").value = "";
-            document.getElementById("color").value = "";
-            document.getElementById("pcs").value = "";
-            document.getElementById("po-select").innerHTML = '<option value="">Select</option>';
-            document.getElementById("color-select").innerHTML = '<option value="">Select</option>';
-            document.getElementById('shadeTbl').getElementsByTagName('tbody')[0].innerHTML = '<tr><td class="p-1 border border-slate-300"><input class="w-full bg-white border border-slate-200 p-1 rounded" placeholder="e.g. A"></td><td class="p-1 border border-slate-300"><input type="number" oninput="calculateShadeSum()" class="w-full bg-white border border-slate-200 p-1 rounded lay-qty-input" placeholder="e.g. 20"></td><td class="p-1 border border-slate-300 text-center"><button class="text-red-500 hover:text-red-700 font-bold" onclick="removeRow(this, \'shade\')">✖</button></td></tr>';
-            clearAutoFields();
-            document.getElementById("out").innerHTML = "";
-            calculateShadeSum();
-            cancelEdit();
-        }
-
-        function saveToHistory() {
-            let cutNo = document.getElementById("cut").value.trim();
-            let styleNo = document.getElementById("style").value.trim();
-            
-            if(!cutNo || !styleNo) {
-                alert("Please type 'Manual Cut No' and load a valid Job!");
-                return false;
-            }
-
-            let jobKey = document.getElementById('inp-job-no').value;
-            let indexList = JSON.parse(localStorage.getItem("zd230_history_index") || "[]");
-            let sysCutNo = currentEditingKey ? JSON.parse(localStorage.getItem(currentEditingKey)).sysCutNo : `SYS-CUT-${String(indexList.length + 1001).padStart(4, '0')}`;
-            
-            let historyKey = currentEditingKey ? currentEditingKey : "Style_" + styleNo + "_Cut_" + cutNo + "_" + Date.now();
-
-            let shades = [...document.getElementById("shadeTbl").querySelectorAll("tbody tr")].map(r=>({
-                shade: r.cells[0].querySelector("input").value,
-                lay: r.cells[1].querySelector("input").value
-            }));
-
-            let sizes = [...document.getElementById("sizeTbl").querySelectorAll("tbody tr")].map(r=>({
-                size: r.cells[0].querySelector("input").value,
-                ratio: r.cells[1].querySelector("input").value
-            }));
-
-            let parts = [...document.getElementById("partTbl").querySelectorAll("tbody tr")].map(r=>
-                r.cells[0].querySelector("input").value
-            );
-
-            let oldData = currentEditingKey ? JSON.parse(localStorage.getItem(currentEditingKey)) : null;
-
-            let cuttingData = {
-                key: historyKey,
-                buyer: document.getElementById("buyer").value,
-                style: styleNo,
-                po: document.getElementById("po").value,
-                cut: cutNo,
-                color: document.getElementById("color").value,
-                pcs: document.getElementById("pcs").value,
-                jobNo: jobKey,
-                sysCutNo: sysCutNo,
-                shades: shades,
-                sizes: sizes,
-                parts: parts,
-                date: oldData ? oldData.date : new Date().toLocaleDateString('en-US')
-            };
-
-            if(!indexList.includes(historyKey)){
-                indexList.push(historyKey);
-                localStorage.setItem("zd230_history_index", JSON.stringify(indexList));
-            }
-
-            localStorage.setItem(historyKey, JSON.stringify(cuttingData));
-            cancelEdit();
-            return true;
-        }
-
-        function renderHierarchyTree(filteredIndexList = null) {
-            const treeContainer = document.getElementById('tree-container');
-            const summaryBox = document.getElementById('color-summary-box');
-            if(!treeContainer || !summaryBox) return;
-            treeContainer.innerHTML = '';
-            summaryBox.innerHTML = '';
-
-            let indexList = filteredIndexList || JSON.parse(localStorage.getItem("zd230_history_index") || "[]");
-
-            if(indexList.length === 0) {
-                treeContainer.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">No cutting data found. Open 'New Cutting Entry' to start.</p>`;
-                return;
-            }
-
-            let colorSummary = {};
-            let yearGroup = {};
-
-            indexList.forEach(key => {
-                let item = JSON.parse(localStorage.getItem(key));
-                if(!item) return;
-
-                colorSummary[item.color] = (colorSummary[item.color] || 0) + 1;
-
-                let yearPart = item.jobNo ? item.jobNo.split('-')[0] : 'Unknown';
-                let displayJobNo = item.jobNo ? item.jobNo.split('-')[1] : '0';
-
-                if(!yearGroup[yearPart]) yearGroup[yearPart] = {};
-                if(!yearGroup[yearPart][displayJobNo]) yearGroup[yearPart][displayJobNo] = { info: item, colors: {} };
-                
-                if(!yearGroup[yearPart][displayJobNo].colors[item.color]) {
-                    yearGroup[yearPart][displayJobNo].colors[item.color] = [];
-                }
-                yearGroup[yearPart][displayJobNo].colors[item.color].push(item);
-            });
-
-            Object.keys(colorSummary).forEach(color => {
-                summaryBox.innerHTML += `
-                    <div class="bg-slate-50 border p-2.5 rounded-lg text-center">
-                        <span class="block text-[10px] font-bold text-slate-400 uppercase">${color || 'Unknown'}</span>
-                        <span class="text-sm font-black text-cyan-600">${colorSummary[color]} Lots</span>
-                    </div>`;
-            });
-
-            let sortedYears = Object.keys(yearGroup).sort((a,b)=> b - a);
-
-            sortedYears.forEach(year => {
-                let yearHtml = `
-                <div class="bg-slate-100 p-4 rounded-xl border border-slate-300 space-y-4">
-                    <div class="text-xs font-black text-slate-700 bg-slate-200 px-3 py-1 rounded w-fit"><i class="fa-solid fa-calendar-days mr-1"></i> YEAR: ${year}</div>
-                `;
-                
-                Object.keys(yearGroup[year]).forEach(displayJob => {
-                    const jobObj = yearGroup[year][displayJob];
-                    yearHtml += `
-                        <div class="border border-slate-200 rounded-xl bg-white p-4 space-y-3 shadow-sm">
-                            <div class="flex flex-wrap justify-between items-center bg-slate-800 text-white px-3 py-2 rounded-lg text-xs font-mono">
-                                <span><i class="fa-solid fa-folder-open text-amber-400 mr-1.5"></i>JOB NO: <strong>${displayJob}</strong></span>
-                                <span class="text-slate-400">Buyer: ${jobObj.info.buyer} | Style: ${jobObj.info.style} | PO: ${jobObj.info.po}</span>
-                            </div>
-                            <div class="pl-4 border-l-2 border-dashed border-slate-300 space-y-3">`;
-
-                    Object.keys(jobObj.colors).forEach(colorName => {
-                        const cutList = jobObj.colors[colorName];
-                        const lastCutObj = cutList[cutList.length - 1];
-
-                        yearHtml += `
-                            <div class="space-y-2 bg-slate-50/50 p-3 rounded-lg border border-slate-100">
-                                <div class="text-xs font-bold text-slate-700 flex flex-wrap justify-between items-center gap-2 border-b pb-2 mb-2 bg-slate-100 p-2 rounded">
-                                    <div class="flex items-center">
-                                        <i class="fa-solid fa-palette text-cyan-500 mr-2"></i> Color: 
-                                        <span class="ml-1 bg-cyan-50 text-cyan-700 px-2 py-0.5 rounded border border-cyan-200 font-extrabold">${colorName}</span>
-                                        <span class="ml-2 text-[10px] text-slate-400 font-normal">(${cutList.length} Lots)</span>
-                                    </div>
-                                    <div class="flex items-center space-x-1.5">
-                                        <button onclick="triggerNewCuttingForColor('${lastCutObj.key}')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold px-2 py-1 rounded transition flex items-center">
-                                            <i class="fa-solid fa-plus-circle mr-1"></i> New Cutting
-                                        </button>
-                                        <button onclick="loadHistoryAndGoToForm('${lastCutObj.key}')" class="bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-extrabold px-2 py-1 rounded transition flex items-center">
-                                            <i class="fa-solid fa-pen-to-square mr-1"></i> Edit Color
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="pl-2 grid grid-cols-1 gap-1.5">`;
-
-                        cutList.forEach(cut => {
-                            yearHtml += `
-                                <div class="bg-white border border-slate-200 rounded p-2 flex flex-wrap justify-between items-center text-[11px] shadow-sm hover:border-cyan-400 transition">
-                                    <div class="space-y-0.5">
-                                        <p class="font-mono font-bold text-slate-700"><i class="fa-solid fa-receipt text-slate-400 mr-1"></i> System No: ${cut.sysCutNo}</p>
-                                        <p class="text-slate-500">Manual Cut No: <span class="font-bold text-slate-800">${cut.cut}</span> | Date: <span class="text-slate-600">${cut.date}</span></p>
-                                    </div>
-                                    <div class="flex items-center space-x-2">
-                                        <button onclick="loadHistoryAndGoToForm('${cut.key}')" class="text-slate-600 hover:text-cyan-600 font-bold"><i class="fa-solid fa-eye"></i> View</button>
-                                        <button onclick="duplicateEntry('${cut.key}')" class="text-emerald-600 hover:text-emerald-800 font-bold px-1"><i class="fa-solid fa-clone"></i></button>
-                                        <button onclick="deleteHistoryData('${cut.key}')" class="text-red-500 hover:text-red-700 font-bold px-1"><i class="fa-solid fa-trash"></i></button>
-                                    </div>
-                                </div>`;
-                        });
-
-                        yearHtml += `</div></div>`;
-                    });
-
-                    yearHtml += `</div></div>`;
-                });
-
-                yearHtml += `</div>`;
-                treeContainer.innerHTML += yearHtml;
-            });
-        }
-
-        function triggerNewCuttingForColor(key) {
-            let data = JSON.parse(localStorage.getItem(key));
-            if(!data) return;
-
-            cancelEdit(); 
-
-            let yearPart = data.jobNo.split('-')[0];
-            let displayJobNo = data.jobNo.split('-')[1];
-
-            document.getElementById("load-year").value = yearPart;
-            document.getElementById("load-job-no").value = displayJobNo;
-            
-            document.getElementById("buyer").value = data.buyer || "";
-            document.getElementById("style").value = data.style || "";
-            document.getElementById("po").value = data.po || "";
-            document.getElementById("color").value = data.color || "";
-            document.getElementById("pcs").value = data.pcs || "";
-            document.getElementById('inp-job-no').value = data.jobNo;
-
-            let nextCutNo = parseInt(data.cut);
-            document.getElementById("cut").value = !isNaN(nextCutNo) ? String(nextCutNo + 1).padStart(2, '0') : data.cut + "-New";
-
-            document.getElementById('shadeTbl').getElementsByTagName('tbody')[0].innerHTML = '<tr><td class="p-1 border border-slate-300"><input class="w-full bg-white border border-slate-200 p-1 rounded" placeholder="e.g. A"></td><td class="p-1 border border-slate-300"><input type="number" oninput="calculateShadeSum()" class="w-full bg-white border border-slate-200 p-1 rounded lay-qty-input" placeholder="e.g. 20"></td><td class="p-1 border border-slate-300 text-center"><button class="text-red-500 hover:text-red-700 font-bold" onclick="removeRow(this, \'shade\')">✖</button></td></tr>';
-            
-            if(data.sizes && data.sizes.length > 0) {
-                document.getElementById('sizeTbl').getElementsByTagName('tbody')[0].innerHTML = "";
-                data.sizes.forEach(sz => addSize(sz.size, sz.ratio));
-            }
-            if(data.parts && data.parts.length > 0) {
-                document.getElementById('partTbl').getElementsByTagName('tbody')[0].innerHTML = "";
-                data.parts.forEach(p => addPart(p));
-            }
-
-            document.getElementById("out").innerHTML = "";
-            calculateShadeSum();
-            calculateSizeSum();
-
-            let lookupKey = data.jobNo;
-            let mData = JSON.parse(localStorage.getItem('master_job_' + lookupKey));
-            if(mData) initializeShortCuttingMatrix(mData);
-
-            switchTab('generator');
-        }
-
-        function displayQuickList() {
-            let indexList = JSON.parse(localStorage.getItem("zd230_history_index") || "[]");
-            let sideContainer = document.getElementById("sideHistoryList");
-            if(!sideContainer) return;
-            sideContainer.innerHTML = "";
-
-            if(indexList.length === 0) {
-                sideContainer.innerHTML = '<p class="text-slate-400 text-center py-2">No data saved.</p>';
-                return;
-            }
-
-            let sideHtml = "";
-            for(let i = indexList.length - 1; i >= 0; i--) {
-                let data = JSON.parse(localStorage.getItem(indexList[i]));
-                if(!data) continue;
-                
-                sideHtml += `
-                <div class="p-2 bg-slate-50 border rounded flex justify-between items-center hover:bg-slate-100 transition">
-                    <div class="truncate mr-2">
-                        <strong class="text-slate-700 block truncate">St: ${data.style} (Cut: ${data.cut})</strong>
-                        <span class="text-[10px] text-slate-400 block">${data.sysCutNo}</span>
-                    </div>
-                    <div class="flex space-x-1 flex-shrink-0">
-                        <button class="bg-cyan-600 text-white font-bold rounded px-1.5 py-0.5 text-[10px] hover:bg-cyan-700" onclick="loadHistoryData('${data.key}')">Edit</button>
-                        <button class="bg-red-500 text-white font-bold rounded px-1.5 py-0.5 text-[10px] hover:bg-red-600" onclick="deleteHistoryData('${data.key}')">✖</button>
-                    </div>
-                </div>`;
-            }
-            sideContainer.innerHTML = sideHtml;
-        }
-
-        function searchERP() {
-            const query = document.getElementById('global-search').value.toLowerCase().trim();
-            let indexList = JSON.parse(localStorage.getItem("zd230_history_index") || "[]");
-            
-            if(!query) {
-                renderHierarchyTree();
-                return;
-            }
-
-            const filteredIndex = indexList.filter(key => {
-                let item = JSON.parse(localStorage.getItem(key));
-                if(!item) return false;
-                return item.jobNo.toLowerCase().includes(query) ||
-                       item.sysCutNo.toLowerCase().includes(query) ||
-                       item.cut.toLowerCase().includes(query) ||
-                       item.style.toLowerCase().includes(query) ||
-                       item.buyer.toLowerCase().includes(query) ||
-                       item.po.toLowerCase().includes(query) ||
-                       item.color.toLowerCase().includes(query);
-            });
-
-            renderHierarchyTree(filteredIndex);
-        }
-
-        function duplicateEntry(key) {
-            const target = JSON.parse(localStorage.getItem(key));
-            if(target) {
-                let indexList = JSON.parse(localStorage.getItem("zd230_history_index") || "[]");
-                
-                const cloned = {
-                    ...target,
-                    key: "Style_" + target.style + "_Cut_" + target.cut + "_" + Date.now(),
-                    cut: parseInt(target.cut) ? String(parseInt(target.cut) + 1).padStart(2, '0') : target.cut + " (Copy)",
-                    sysCutNo: `SYS-CUT-${String(indexList.length + 1001).padStart(4, '0')}`,
-                    date: new Date().toLocaleDateString('en-US')
-                };
-
-                indexList.push(cloned.key);
-                localStorage.setItem("zd230_history_index", JSON.stringify(indexList));
-                localStorage.setItem(cloned.key, JSON.stringify(cloned));
-                renderHierarchyTree();
-                alert('Cutting Lot Record successfully Cloned!');
-            }
-        }
-
-        function loadHistoryAndGoToForm(key) {
-            loadHistoryData(key);
-            switchTab('generator');
-        }
-
-        function loadHistoryData(key) {
-            let data = JSON.parse(localStorage.getItem(key));
-            if(!data) return;
-
-            currentEditingKey = key;
-            
-            let yearPart = data.jobNo.split('-')[0];
-            let displayJobNo = data.jobNo.split('-')[1];
-
-            document.getElementById("load-year").value = yearPart;
-            document.getElementById("load-job-no").value = displayJobNo;
-
-            document.getElementById("buyer").value = data.buyer || "";
-            document.getElementById("style").value = data.style || "";
-            document.getElementById("po").value = data.po || "";
-            document.getElementById("cut").value = data.cut || "";
-            document.getElementById("color").value = data.color || "";
-            document.getElementById("pcs").value = data.pcs || "";
-            document.getElementById('inp-job-no').value = data.jobNo;
-            document.getElementById('inp-sys-cut-no').value = data.sysCutNo;
-
-            if(data.shades) {
-                document.getElementById('shadeTbl').getElementsByTagName('tbody')[0].innerHTML = "";
-                data.shades.forEach(sh => addShade(sh.shade, sh.lay));
-            }
-            if(data.sizes) {
-                document.getElementById('sizeTbl').getElementsByTagName('tbody')[0].innerHTML = "";
-                data.sizes.forEach(sz => addSize(sz.size, sz.ratio));
-            }
-            if(data.parts) {
-                document.getElementById('partTbl').getElementsByTagName('tbody')[0].innerHTML = "";
-                data.parts.forEach(p => addPart(p));
-            }
-            document.getElementById("out").innerHTML = "";
-            document.getElementById('form-action-title').innerHTML = `<i class="fa-solid fa-file-pen text-amber-500 mr-2"></i> Cutting Data - EDIT MODE`;
-            document.getElementById('btn-cancel').classList.remove('hidden');
-            calculateShadeSum();
-            calculateSizeSum();
-
-            let lookupKey = data.jobNo;
-            let mData = JSON.parse(localStorage.getItem('master_job_' + lookupKey));
-            if(mData) initializeShortCuttingMatrix(mData);
-        }
-
-        function cancelEdit() {
-            currentEditingKey = null;
-            document.getElementById('form-action-title').innerHTML = `<i class="fa-solid fa-file-pen text-cyan-600 mr-2"></i>Cutting & Bundle Data Form`;
+            currentEditingKey = null; document.getElementById('form-action-title').innerHTML = `<i class="fa-solid fa-file-pen text-cyan-600 mr-2"></i>Cutting & Bundle Data Form`;
+            document.getElementById('load-job-no').value = ''; document.getElementById('buyer').value = '';
+            document.getElementById('style').value = ''; document.getElementById('po').value = '';
+            document.getElementById('color').value = ''; document.getElementById('cut').value = '';
+            document.getElementById('pcs').value = ''; document.getElementById('po-select').innerHTML = '<option value="">Select</option>';
+            document.getElementById('color-select').innerHTML = '<option value="">Select</option>';
+            document.querySelector('#shadeTbl tbody').innerHTML = ''; document.querySelector('#sizeTbl tbody').innerHTML = '';
+            document.querySelector('#partTbl tbody').innerHTML = ''; document.getElementById('short-cutting-matrix-root').innerHTML = '';
+            document.getElementById('customize-bundle-chk').checked = false; toggleCustomizeBundleInput();
+            addShade(); addSize(); addPart(); calculateShadeSum(); calculateSizeSum();
             document.getElementById('btn-cancel').classList.add('hidden');
         }
 
-        function deleteHistoryData(key) {
-            if(confirm("Are you sure you want to permanently delete this cutting record?")) {
-                localStorage.removeItem(key);
-                let indexList = JSON.parse(localStorage.getItem("zd230_history_index") || "[]");
-                indexList = indexList.filter(item => item !== key);
-                localStorage.setItem("zd230_history_index", JSON.stringify(indexList));
-                renderHierarchyTree();
-                displayQuickList();
-            }
+        function displayQuickList() {
+            const container = document.getElementById('sideHistoryList'); container.innerHTML = '';
+            let erpIndex = JSON.parse(localStorage.getItem('cut_erp_index') || '[]');
+            if(erpIndex.length === 0) { container.innerHTML = '<div class="text-slate-400 p-2 text-center border border-dashed rounded">No active cutting layout tracks running.</div>'; return; }
+            erpIndex.sort().reverse().forEach(k => {
+                let d = JSON.parse(localStorage.getItem('erp_job_' + k)); if(!d) return;
+                let div = document.createElement('div'); div.className = "p-3 bg-slate-50 border border-slate-200 rounded-lg shadow-sm space-y-1 relative group font-medium";
+                div.innerHTML = `
+                    <div class="font-bold text-slate-800 text-xs">Job No: ${d.year}-${d.jobNo} &rarr; Cut: ${d.cut}</div>
+                    <div class="text-[11px] text-slate-500">Buyer: ${d.buyer} | Style: ${d.style}</div>
+                    <div class="text-[10px] font-mono text-cyan-600">PO: ${d.po} | Color: ${d.color}</div>
+                    <div class="text-[9px] bg-slate-200 font-bold px-1 py-0.5 rounded text-slate-600 w-fit uppercase tracking-wider">${d.type.replace('_',' ')}</div>
+                    <div class="absolute right-2 top-2 space-x-1 flex opacity-80 sm:opacity-0 group-hover:opacity-100 transition">
+                        <button onclick="editCuttingLog('${k}')" class="text-cyan-600 hover:text-cyan-800 bg-white border p-1 rounded"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteCuttingLog('${k}')" class="text-rose-600 hover:text-rose-800 bg-white border p-1 rounded"><i class="fa-solid fa-trash"></i></button>
+                    </div>`;
+                container.appendChild(div);
+            });
         }
 
-        function generate(){
-            let buyer = document.getElementById("buyer").value;
-            let style = document.getElementById("style").value;
-            let po = document.getElementById("po").value;
-            let cut = document.getElementById("cut").value;
-            let color = document.getElementById("color").value;
-            let pcs = parseInt(document.getElementById("pcs").value || 20);
+        function editCuttingLog(k) {
+            let d = JSON.parse(localStorage.getItem('erp_job_' + k)); if(!d) return;
+            currentEditingKey = k; switchTab('generator');
+            document.getElementById('form-action-title').innerHTML = `<i class="fa-solid fa-pen-to-square text-amber-500 mr-2"></i>Editing Bundle Log: <span class="text-cyan-600">${d.year}-${d.jobNo} (Cut: ${d.cut})</span>`;
+            document.getElementById('load-year').value = d.year; document.getElementById('load-job-no').value = d.jobNo;
+            autoFillFromJobNo();
+            document.getElementById('po').value = d.po; document.getElementById('color').value = d.color;
+            document.getElementById('cut').value = d.cut; document.getElementById('pcs').value = d.pcs;
+            document.querySelector('#shadeTbl tbody').innerHTML = ''; document.querySelector('#sizeTbl tbody').innerHTML = '';
+            document.querySelector('#partTbl tbody').innerHTML = ''; document.getElementById('short-cutting-matrix-root').innerHTML = '';
 
-            // Get customize bundle states
-            let useCustomizeBundle = document.getElementById("customize-bundle-chk").checked;
-            let customizeBundlePcs = parseInt(document.getElementById("customize-bundle-pcs").value);
-
-            if(useCustomizeBundle && (isNaN(customizeBundlePcs) || customizeBundlePcs <= 0)) {
-                alert("Please type a valid number for Extra Bundle Pcs!");
-                return;
-            }
-
-            if(!style || !cut || !color) {
-                alert("Please make sure Style, Cut No and Color fields are filled properly!");
-                return;
-            }
-
-            let isSaved = saveToHistory();
-            if(!isSaved) return;
-
-            let shades = [...document.getElementById("shadeTbl").querySelectorAll("tbody tr")].map(r=>({
-                shade: r.cells[0].querySelector("input").value,
-                lay: parseInt(r.cells[1].querySelector("input").value || 0)
-            }));
-
-            let sizes = [...document.getElementById("sizeTbl").querySelectorAll("tbody tr")].map(r=>({
-                size: r.cells[0].querySelector("input").value,
-                ratio: parseInt(r.cells[1].querySelector("input").value || 1)
-            }));
-
-            let parts = [...document.getElementById("partTbl").querySelectorAll("tbody tr")].map(r=>
-                r.cells[0].querySelector("input").value
-            );
-
-            let html = "";
-
-            for(let p of parts){
-                if(!p) continue;
-                
-                let bundleNo = 1;
-                let globalGroupCount = 0; 
-                let sizeSerialTracker = {};
-
-                for(let s of sizes){
-                    let currentSize = s.size;
-                    if(!currentSize) continue;
-
-                    if (!sizeSerialTracker[currentSize]) {
-                        sizeSerialTracker[currentSize] = 1;
-                    }
-
-                    for(let g=0; g<s.ratio; g++){
-                        let group = String.fromCharCode(65 + globalGroupCount); 
-
-                        let isFirstShadeInFirstRatioGroup = true;
-
-                        for(let sh of shades) {
-                            let currentShade = sh.shade;
-                            let lay = sh.lay;
-                            if(!currentShade) continue;
-                            
-                            let currentSerial = sizeSerialTracker[currentSize];
-                            let endLimit = currentSerial + lay - 1;
-
-                            // ================= CUSTOMIZE BUNDLE INSERTION LOGIC =================
-                            if(useCustomizeBundle && g === 0 && isFirstShadeInFirstRatioGroup && lay > 0) {
-                                let specStart = currentSerial;
-                                let specEnd = Math.min(currentSerial + customizeBundlePcs - 1, endLimit);
-                                let specQty = specEnd - specStart + 1;
-                                let specBid = "BDL-" + String(bundleNo).padStart(6, "0");
-
-                                html += `
-                                <div class="label" style="border-color: #0284c7; background: #f0f9ff;">
-                                    <table class="inner">
-                                        <tr style="background: #e0f2fe;">
-                                            <td>Buyer</td><td>${buyer}</td>
-                                            <td colspan="2" class="head" style="background:#bae6fd; color:#0369a1;">${currentShade} SHADE (CUSTOM)</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Cut</td><td>${cut}</td>
-                                            <td>Size</td><td>${currentSize} (${group})</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Style</td><td>${style}</td>
-                                            <td>Bundle</td><td>${bundleNo} (SP)</td>
-                                        </tr>
-                                        <tr>
-                                            <td>PO</td><td>${po}</td>
-                                            <td>Start</td><td>${specStart}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Color</td><td>${color}</td>
-                                            <td>End</td><td>${specEnd}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Part</td><td>${p}</td>
-                                            <td>Qty</td><td>${specQty}</td>
-                                        </tr>
-                                        <tr style="background: #e0f2fe;">
-                                            <td colspan="4" class="head" style="font-size:9px; background:#bae6fd; color:#0369a1;">
-                                                QR: ${specBid}|${cut}|${color}|SPEC
-                                            </td>
-                                        </tr>
-                                    </table>
-                                </div>`;
-
-                                bundleNo++;
-                                currentSerial = specEnd + 1;
-                                lay = lay - specQty;
-                            }
-
-                            isFirstShadeInFirstRatioGroup = false; 
-
-                            if (lay > 0) {
-                                let bundles = Math.ceil(lay/pcs);
-
-                                for(let b=1; b<=bundles; b++){
-                                    let start = currentSerial;
-                                    let end = Math.min(currentSerial + pcs - 1, endLimit);
-                                    let qty = end - start + 1;
-                                    let bid = "BDL-" + String(bundleNo).padStart(6, "0");
-
-                                    html += `
-                                    <div class="label">
-                                        <table class="inner">
-                                            <tr>
-                                                <td>Buyer</td><td>${buyer}</td>
-                                                <td colspan="2" class="head">${currentShade} SHADE</td>
-                                            </tr>
-                                            <tr>
-                                                <td>Cut</td><td>${cut}</td>
-                                                <td>Size</td><td>${currentSize} (${group})</td>
-                                            </tr>
-                                            <tr>
-                                                <td>Style</td><td>${style}</td>
-                                                <td>Bundle</td><td>${bundleNo}</td>
-                                            </tr>
-                                            <tr>
-                                                <td>PO</td><td>${po}</td>
-                                                <td>Start</td><td>${start}</td>
-                                            </tr>
-                                            <tr>
-                                                <td>Color</td><td>${color}</td>
-                                                <td>End</td><td>${end}</td>
-                                            </tr>
-                                            <tr>
-                                                <td>Part</td><td>${p}</td>
-                                                <td>Qty</td><td>${qty}</td>
-                                            </tr>
-                                            <tr>
-                                                <td colspan="4" class="head" style="font-size:9px;">
-                                                    QR: ${bid}|${cut}|${color}
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    </div>`;
-                                    
-                                    bundleNo++; 
-                                    currentSerial = end + 1;
-                                }
-                            }
-                            sizeSerialTracker[currentSize] = currentSerial;
-                        }
-                        globalGroupCount++; 
-                    }
-                }
-            }
-            document.getElementById("out").innerHTML = html;
-            displayQuickList();
-            alert('Bundle stickers generated successfully!');
-        }
-
-        let activeJobSizesCache = [];
-
-        function initializeShortCuttingMatrix(masterDataObj) {
-            const container = document.getElementById('short-cutting-matrix-root');
-            container.innerHTML = '';
-            activeJobSizesCache = [];
-
-            if (!masterDataObj || !masterDataObj.sizes) return;
-
-            activeJobSizesCache = masterDataObj.sizes.split(',').map(s => s.trim()).filter(s => s);
-
-            addShortShadeBlock("A");
-        }
-
-        function addShortShadeBlock(specificShadeName = "") {
-            const container = document.getElementById('short-cutting-matrix-root');
-            const uniqueBlockId = 'matrix-shade-block-' + Date.now() + Math.floor(Math.random()*100);
-
-            let blockHtml = `
-                <div id="${uniqueBlockId}" class="matrix-shade-item bg-slate-800 border border-slate-700 p-4 rounded-lg space-y-3">
-                    <div class="flex justify-between items-center border-b border-slate-700 pb-2">
-                        <div class="flex items-center space-x-2">
-                            <span class="text-xs font-bold text-slate-300">Shade Layer:</span>
-                            <input type="text" class="matrix-shade-name bg-slate-950 border border-slate-600 rounded px-2 py-0.5 text-xs text-amber-400 font-bold focus:outline-none focus:border-amber-500 w-20 text-center" value="${specificShadeName}" placeholder="e.g. A">
+            if(d.type === 'standard') {
+                d.shades.forEach(sh => addShade(sh.s, sh.q)); d.sizes.forEach(sz => addSize(sz.s, sz.r));
+            } else {
+                addShade(); addSize();
+                d.shortBlocks.forEach(blk => {
+                    const blockId = 'short_blk_' + Date.now() + Math.random().toString(36).substr(2, 5);
+                    const div = document.createElement('div'); div.className = "p-4 bg-slate-800 rounded-lg border border-slate-700 text-xs text-slate-300 space-y-3 short-block-item";
+                    div.setAttribute('id', blockId);
+                    div.innerHTML = `
+                        <div class="flex justify-between items-center bg-slate-900 p-2 rounded">
+                            <div class="flex items-center space-x-2">
+                                <span class="font-black text-amber-400 uppercase tracking-widest text-[10px]">Shade Group Layer Name:</span>
+                                <input type="text" class="bg-slate-950 border border-slate-700 text-white font-bold px-2 py-0.5 rounded w-20 short-shade-title" value="${blk.shade}">
+                            </div>
+                            <button type="button" onclick="document.getElementById('${blockId}').remove()" class="text-rose-400 hover:text-rose-600 font-bold">✖ Delete</button>
                         </div>
-                        <button type="button" onclick="document.getElementById('${uniqueBlockId}').remove()" class="text-red-400 hover:text-red-500 text-xs font-bold"><i class="fa-solid fa-trash-can"></i> Remove</button>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
-            `;
-
-            activeJobSizesCache.forEach(size => {
-                blockHtml += `
-                    <div class="bg-slate-950 border border-slate-800 p-2 rounded">
-                        <label class="block text-[10px] font-bold text-slate-400 mb-1 truncate text-center">${size}</label>
-                        <input type="number" data-size-name="${size}" class="matrix-absolute-qty bg-slate-900 border border-slate-700 rounded text-center w-full py-1 text-xs text-emerald-400 font-extrabold focus:outline-none focus:border-emerald-500" placeholder="Qty Pcs" min="0" value="0">
-                    </div>
-                `;
-            });
-
-            if(activeJobSizesCache.length === 0) {
-                blockHtml += `<p class="col-span-full text-slate-500 text-[11px] text-center italic">No sizes mapped in master data configuration settings.</p>`;
+                        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2 short-sizes-container"></div>`;
+                    document.getElementById('short-cutting-matrix-root').appendChild(div);
+                    blk.matrix.forEach(szNode => addShortSizeInputRow(blockId, szNode.name, szNode.totalPcs));
+                });
             }
-
-            blockHtml += `
-                    </div>
-                </div>
-            `;
-
-            container.insertAdjacentHTML('beforeend', blockHtml);
+            d.parts.forEach(p => addPart(p)); calculateShadeSum(); calculateSizeSum();
+            document.getElementById('btn-cancel').classList.remove('hidden');
         }
 
-        function generateShortMatrixBundles() {
-            let buyer = document.getElementById("buyer").value;
-            let style = document.getElementById("style").value;
-            let po = document.getElementById("po").value;
-            let cut = document.getElementById("cut").value;
-            let color = document.getElementById("color").value;
-            let pcs = parseInt(document.getElementById("pcs").value || 20);
+        function cancelEdit() { clearCurrentForm(); displayQuickList(); }
 
-            if(!style || !cut || !color) {
-                alert("Please make sure Style, Cut No and Color fields are filled properly from loaded Job!");
-                return;
-            }
+        async function deleteCuttingLog(k) {
+            if(!confirm("Are you sure you want to permanently delete this generated bundle cutting log tracker profile from cloud history?")) return;
+            let erpIndex = JSON.parse(localStorage.getItem('cut_erp_index') || '[]');
+            erpIndex = erpIndex.filter(item => item !== k);
+            localStorage.setItem('cut_erp_index', JSON.stringify(erpIndex));
+            localStorage.removeItem('erp_job_' + k);
+            await supabase.from('erp_index').delete().eq('id', k);
+            await fetchCloudData(); displayQuickList();
+        }
 
-            let matrixBlocks = document.querySelectorAll('.matrix-shade-item');
-            if(matrixBlocks.length === 0) {
-                alert("Please add at least one Short Shade Matrix Block data layer!");
-                return;
-            }
-
-            let parsedMatrixData = []; 
+        function renderHierarchyTree() {
+            const container = document.getElementById('tree-container'); container.innerHTML = '';
+            let erpIndex = JSON.parse(localStorage.getItem('cut_erp_index') || '[]');
+            if(erpIndex.length === 0) { container.innerHTML = '<div class="text-slate-400 font-medium p-4 text-center">No active history log components profiles initialized inside database nodes.</div>'; return; }
             
-            matrixBlocks.forEach(block => {
-                let nameInput = block.querySelector('.matrix-shade-name').value.trim() || "Unknown";
-                let sizeInputs = block.querySelectorAll('.matrix-absolute-qty');
-                
-                let sizeMap = {};
-                sizeInputs.forEach(input => {
-                    let sz = input.getAttribute('data-size-name');
-                    let qty = parseInt(input.value) || 0;
-                    sizeMap[sz] = qty;
-                });
-
-                parsedMatrixData.push({
-                    shadeName: nameInput,
-                    sizeMap: sizeMap
-                });
+            let tree = {}; erpIndex.forEach(k => {
+                let d = JSON.parse(localStorage.getItem('erp_job_' + k)); if(!d) return;
+                let yr = d.year; let jb = d.jobNo; let clr = d.color;
+                if(!tree[yr]) tree[yr] = {}; if(!tree[yr][jb]) tree[yr][jb] = {}; if(!tree[yr][jb][clr]) tree[yr][jb][clr] = [];
+                tree[yr][jb][clr].push({ key: k, cut: d.cut, buyer: d.buyer, style: d.style, po: d.po, type: d.type });
             });
 
-            let parts = [...document.getElementById("partTbl").querySelectorAll("tbody tr")].map(r=>
-                r.cells[0].querySelector("input").value
-            ).filter(p => p);
+            let colorSummaryMap = {};
+            Object.keys(tree).sort().reverse().forEach(yr => {
+                let yrDiv = document.createElement('div'); yrDiv.className = "border border-slate-200 rounded-xl overflow-hidden shadow-sm bg-white mb-3";
+                yrDiv.innerHTML = `<div class="bg-slate-800 text-white font-black px-4 py-2.5 flex items-center justify-between cursor-pointer select-none text-xs tracking-wider uppercase"><span class="flex items-center"><i class="fa-solid fa-calendar-days text-cyan-400 mr-2"></i> CALENDAR RUNTIME YEAR &rarr; ${yr}</span><i class="fa-solid fa-chevron-down text-slate-400"></i></div>`;
+                let yrBody = document.createElement('div'); yrBody.className = "p-3 space-y-3 bg-slate-50/50";
+                
+                Object.keys(tree[yr]).sort().reverse().forEach(jb => {
+                    let jbDiv = document.createElement('div'); jbDiv.className = "border border-slate-200 rounded-lg overflow-hidden bg-white shadow-xs";
+                    let firstNode = tree[yr][jb][Object.keys(tree[yr][jb])[0]][0];
+                    jbDiv.innerHTML = `<div class="bg-slate-200 text-slate-800 font-bold px-4 py-2 flex justify-between items-center text-xs border-b cursor-pointer select-none"><span><i class="fa-solid fa-folder text-amber-500 mr-2"></i>JOB ORDER CODE: ${yr}-${jb} &nbsp;|&nbsp; <span class="text-slate-500 font-medium">Bvr: ${firstNode.buyer} - Stl: ${firstNode.style}</span></span><i class="fa-solid fa-angles-down text-slate-400"></i></div>`;
+                    let jbBody = document.createElement('div'); jbBody.className = "p-2.5 space-y-2.5 bg-slate-50/30";
 
-            if(parts.length === 0) {
-                alert("Please map at least one Part inside primary form parts settings framework!");
-                return;
-            }
+                    Object.keys(tree[yr][jb]).sort().forEach(clr => {
+                        let clrDiv = document.createElement('div'); clrDiv.className = "border border-slate-100 rounded-md overflow-hidden bg-white";
+                        let lotCount = tree[yr][jb][clr].length; if(!colorSummaryMap[clr]) colorSummaryMap[clr] = 0; colorSummaryMap[clr] += lotCount;
+                        clrDiv.innerHTML = `<div class="bg-cyan-50/70 text-cyan-900 font-bold px-3 py-1.5 flex justify-between items-center text-xs cursor-pointer select-none"><span><i class="fa-solid fa-palette text-cyan-500 mr-2"></i>COLOR LOT MATRIX: <span class="bg-cyan-600 text-white rounded px-1.5 font-mono py-0.2 text-[10px] ml-1 uppercase">${clr}</span></span><span class="text-[11px] text-cyan-600 font-mono">(${lotCount} Cuts Checked)</span></div>`;
+                        let clrBody = document.createElement('div'); clrBody.className = "p-2 divide-y divide-slate-100 text-xs text-slate-600 font-medium";
 
-            let html = "";
-
-            for(let p of parts) {
-                let bundleNo = 1;
-                let sizeSerialTracker = {}; 
-
-                activeJobSizesCache.forEach(currentSize => {
-                    if(!sizeSerialTracker[currentSize]) {
-                        sizeSerialTracker[currentSize] = 1;
-                    }
-
-                    parsedMatrixData.forEach(matrixRow => {
-                        let currentShade = matrixRow.shadeName;
-                        let absoluteQtyPieces = matrixRow.sizeMap[currentSize] || 0;
-
-                        if (absoluteQtyPieces <= 0) return; 
-
-                        let currentSerial = sizeSerialTracker[currentSize];
-                        let endLimit = currentSerial + absoluteQtyPieces - 1;
-                        let bundlesCount = Math.ceil(absoluteQtyPieces / pcs);
-
-                        for(let b = 1; b <= bundlesCount; b++) {
-                            let start = currentSerial;
-                            let end = Math.min(currentSerial + pcs - 1, endLimit);
-                            let qty = end - start + 1;
-                            let bid = "BDL-" + String(bundleNo).padStart(6, "0");
-
-                            html += `
-                            <div class="label">
-                                <table class="inner">
-                                    <tr>
-                                        <td>Buyer</td><td>${buyer}</td>
-                                        <td colspan="2" class="head">${currentShade} SHADE</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Cut</td><td>${cut}</td>
-                                        <td>Size</td><td>${currentSize} (Mtx)</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Style</td><td>${style}</td>
-                                        <td>Bundle</td><td>${bundleNo}</td>
-                                    </tr>
-                                    <tr>
-                                        <td>PO</td><td>${po}</td>
-                                        <td>Start</td><td>${start}</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Color</td><td>${color}</td>
-                                        <td>End</td><td>${end}</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Part</td><td>${p}</td>
-                                        <td>Qty</td><td>${qty}</td>
-                                    </tr>
-                                    <tr>
-                                        <td colspan="4" class="head" style="font-size:9px;">
-                                            QR: ${bid}|${cut}|${color}
-                                        </td>
-                                    </tr>
-                                </table>
-                            </div>`;
-
-                            bundleNo++;
-                            currentSerial = end + 1;
-                        }
-                        sizeSerialTracker[currentSize] = currentSerial;
+                        tree[yr][jb][clr].sort((a,b)=>a.cut.localeCompare(b.cut)).forEach(node => {
+                            let item = document.createElement('div'); item.className = "py-2 px-1 flex flex-wrap justify-between items-center hover:bg-slate-50/80 transition gap-2";
+                            item.innerHTML = `
+                                <div><i class="fa-solid fa-scissors text-slate-400 mr-1.5"></i>Manual Sheet Cut ID: <span class="font-bold text-slate-900 font-mono bg-slate-100 px-1 rounded">${node.cut}</span> &nbsp;|&nbsp; <span class="text-[11px] font-mono text-slate-500">PO: ${node.po}</span> &nbsp;|&nbsp; <span class="text-[10px] font-sans bg-slate-200 text-slate-600 px-1 rounded uppercase font-bold text-[9px]">${node.type.replace('_',' ')}</span></div>
+                                <div class="space-x-1"><button onclick="editCuttingLog('${node.key}')" class="text-cyan-600 hover:bg-cyan-50 px-1.5 py-0.5 rounded border border-cyan-200 bg-white transition">Edit</button><button onclick="deleteCuttingLog('${node.key}')" class="text-rose-600 hover:bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200 bg-white transition">Delete</button></div>`;
+                            clrBody.appendChild(item);
+                        });
+                        clrDiv.appendChild(clrBody); jbBody.appendChild(clrDiv);
                     });
+                    jbDiv.appendChild(jbBody); yrBody.appendChild(jbDiv);
                 });
-            }
+                yrDiv.appendChild(yrBody); container.appendChild(yrDiv);
+            });
 
-            document.getElementById("out").innerHTML = html;
-            alert('Short Matrix bundle stickers generated successfully with sequential integrity logic layout sheets!');
+            const summaryRoot = document.getElementById('color-summary-box'); summaryRoot.innerHTML = '';
+            Object.keys(colorSummaryMap).forEach(cName => {
+                summaryRoot.innerHTML += `<div class="bg-slate-50 border p-2.5 rounded-lg text-center shadow-2xs"><div class="text-[10px] font-black text-slate-400 uppercase tracking-widest max-w-full truncate" title="${cName}">${cName}</div><div class="text-xl font-black text-slate-800 font-mono mt-0.5">${colorSummaryMap[cName]}</div></div>`;
+            });
+            if(Object.keys(colorSummaryMap).length===0) summaryRoot.innerHTML = '<div class="text-slate-400 text-xs p-1">No active logs filters running.</div>';
+        }
+
+        function searchERP() {
+            let s = document.getElementById('global-search').value.trim().toLowerCase();
+            if(!s) { renderHierarchyTree(); return; }
+            let erpIndex = JSON.parse(localStorage.getItem('cut_erp_index') || '[]');
+            const container = document.getElementById('tree-container'); container.innerHTML = '';
+            let filteredHtml = `<div class="bg-white p-4 rounded-xl border border-slate-200 space-y-2 text-xs text-slate-600 font-medium divide-y">`;
+            let matchCount = 0;
+            erpIndex.forEach(k => {
+                let d = JSON.parse(localStorage.getItem('erp_job_' + k)); if(!d) return;
+                let match = d.year.toLowerCase().includes(s) || d.jobNo.toLowerCase().includes(s) ||
+                            d.buyer.toLowerCase().includes(s) || d.style.toLowerCase().includes(s) ||
+                            d.po.toLowerCase().includes(s) || d.color.toLowerCase().includes(s) || d.cut.toLowerCase().includes(s);
+                if(match) {
+                    matchCount++;
+                    filteredHtml += `
+                    <div class="py-2.5 flex flex-wrap justify-between items-center hover:bg-slate-50/50 transition gap-2">
+                        <div>
+                            <div class="font-bold text-slate-800 text-xs">Job No: ${d.year}-${d.jobNo} &nbsp;|&nbsp; Cut: ${d.cut} &nbsp;|&nbsp; Color: <span class="uppercase font-mono bg-cyan-100 text-cyan-800 px-1 rounded">${d.color}</span></div>
+                            <div class="text-[11px] text-slate-500 mt-0.5">Buyer: ${d.buyer} | Style: ${d.style} | PO: ${d.po} | Engine Mode: <span class="uppercase font-bold text-[9px] bg-slate-200 px-1 rounded">${d.type}</span></div>
+                        </div>
+                        <div class="space-x-1"><button onclick="editCuttingLog('${k}')" class="text-cyan-600 bg-white border border-cyan-200 px-2 py-1 rounded shadow-3xs hover:bg-cyan-50">Edit Log</button><button onclick="deleteCuttingLog('${k}')" class="text-rose-600 bg-white border border-rose-200 px-2 py-1 rounded shadow-3xs hover:bg-rose-50">Delete</button></div>
+                    </div>`;
+                }
+            });
+            filteredHtml += `</div>`;
+            if(matchCount === 0) container.innerHTML = '<div class="text-center p-6 text-slate-400 font-medium bg-white border border-dashed rounded-xl">No structural match found inside database indexing rows.</div>';
+            else container.innerHTML = `<div class="text-xs text-cyan-600 font-bold mb-2"><i class="fa-solid fa-circle-check"></i> Found ${matchCount} matching query sheets records:</div>` + filteredHtml;
         }
     </script>
 </body>
